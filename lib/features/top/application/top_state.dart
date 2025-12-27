@@ -5,8 +5,8 @@ class TopState {
   /// 入力テキスト
   String text = '';
 
-  /// 現在のページ数
-  int currentPage = 1;
+  /// 現在のページID
+  String currentPageId = 'page1';
 
   /// 設定アイコンの未読バッジ表示状態
   bool showSettingsBadge = true;
@@ -20,9 +20,9 @@ class TopState {
     lastUpdatedAt = DateTime.now();
   }
 
-  /// ページ数を更新
-  void updatePage(int newPage) {
-    currentPage = newPage;
+  /// ページIDを更新
+  void updatePageId(String pageId) {
+    currentPageId = pageId;
   }
 
   /// 設定バッジを非表示にする
