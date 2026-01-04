@@ -11,13 +11,9 @@ class TopState {
   /// 設定アイコンの未読バッジ表示状態
   bool showSettingsBadge = true;
 
-  /// 最終更新時刻
-  DateTime? lastUpdatedAt;
-
   /// テキストを更新
   void updateText(String newText) {
     text = newText;
-    lastUpdatedAt = DateTime.now();
   }
 
   /// ページIDを更新

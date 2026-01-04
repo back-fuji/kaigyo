@@ -1,5 +1,7 @@
-package com.example.kaigyo
+
+package com.kaigyo.app
 
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity()
+

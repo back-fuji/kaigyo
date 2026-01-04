@@ -52,7 +52,7 @@ class PageSelectMenu extends StatelessWidget {
             ...pages.map((page) {
               return InkWell(
                 onTap: () {
-                  Navigator.of(context).pop();
+                  // Navigator.pop()はContentHeader側で実行されるため、ここでは呼ばない
                   onPageSelected(page);
                 },
                 child: Container(

@@ -8,4 +8,11 @@ class AppConstants {
 
   /// 左右の余白（16px）
   static const double horizontalPadding = 16.0;
+
+  /// Androidパッケージ名
+  static const String androidPackageName = 'com.kaigyo.app';
+
+  /// iOS App Store ID（アプリ公開後に設定してください）
+  /// App Store Connectで確認できる数値IDを設定します
+  static const String iosAppStoreId = 'YOUR_APP_STORE_ID';
 }

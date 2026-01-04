@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../features/settings/infrastructure/purchase_repository_impl.dart';
 import 'fullscreen_ad_widget.dart';
 import 'popup_ad_widget.dart';
 
@@ -31,7 +32,15 @@ class AdManager {
   /// 広告を表示する必要があるかどうかを確認
   ///
   /// セッションが有効な場合は true を返します。
-  static bool shouldShowAd() {
+  /// 購入済みの場合は false を返します。
+  static Future<bool> shouldShowAd() async {
+    // 購入状態をチェック
+    final purchaseRepository = PurchaseRepositoryImpl();
+    final isAdRemoved = await purchaseRepository.isAdRemovedPurchased();
+    if (isAdRemoved) {
+      return false; // 広告非表示が購入済みの場合は広告を表示しない
+    }
+
     if (_sessionStartTime == null) {
       startSession();
       return true;
@@ -43,8 +52,11 @@ class AdManager {
   ///
   /// [context] BuildContext
   /// [onAdClosed] 広告が閉じられた際のコールバック
-  static void showRandomAd(BuildContext context, VoidCallback onAdClosed) {
-    if (!shouldShowAd()) {
+  static Future<void> showRandomAd(
+    BuildContext context,
+    VoidCallback onAdClosed,
+  ) async {
+    if (!await shouldShowAd()) {
       onAdClosed();
       return;
     }

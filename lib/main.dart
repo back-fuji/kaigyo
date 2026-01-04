@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'features/top/presentation/top_page.dart';
+import 'features/top/infrastructure/page_repository_impl.dart';
+import 'features/settings/infrastructure/purchase_repository_impl.dart';
 import 'ads/ad_manager.dart';
 
 /// アプリケーションのエントリーポイント
@@ -20,7 +22,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '改行くん',
+      title: 'kaigyo-clone',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
@@ -44,17 +46,24 @@ class SplashPage extends StatefulWidget {
 class _SplashPageState extends State<SplashPage> {
   bool _adShown = false;
 
+  // リポジトリのインスタンス（アプリ全体で共有）
+  late final PageRepositoryImpl _pageRepository;
+  late final PurchaseRepositoryImpl _purchaseRepository;
+
   @override
   void initState() {
     super.initState();
+    // リポジトリを初期化
+    _pageRepository = PageRepositoryImpl();
+    _purchaseRepository = PurchaseRepositoryImpl();
     _showAd();
   }
 
   /// 広告を表示
-  void _showAd() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  void _showAd() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
-        AdManager.showRandomAd(context, () {
+        await AdManager.showRandomAd(context, () {
           if (mounted) {
             setState(() {
               _adShown = true;
@@ -68,7 +77,10 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     if (_adShown) {
-      return const TopPage();
+      return TopPage(
+        pageRepository: _pageRepository,
+        purchaseRepository: _purchaseRepository,
+      );
     }
 
     // 広告表示中はスプラッシュ画面を表示

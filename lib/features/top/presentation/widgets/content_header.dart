@@ -23,7 +23,8 @@ class ContentHeader extends StatefulWidget {
   final ValueChanged<PageEntity>? onPageSelected;
 
   /// ページ編集を開くコールバック
-  final VoidCallback? onEditPages;
+  /// [context]はshowDialogのcontextを渡す
+  final ValueChanged<BuildContext>? onEditPages;
 
   /// ページボタンタップ時のコールバック（フォーカス保持用）
   final VoidCallback? onPageButtonTap;
@@ -95,8 +96,11 @@ class _ContentHeaderState extends State<ContentHeader> {
                     widget.onPageSelected!(page);
                   },
                   onEditPages: () {
-                    Navigator.of(dialogContext).pop();
-                    widget.onEditPages!();
+                    // showDialogを閉じずに、その上にshowModalBottomSheetを開く
+                    // dialogContextを使ってモーダルを開くことで、showDialogの上に表示される
+                    if (widget.onEditPages != null) {
+                      widget.onEditPages!(dialogContext);
+                    }
                   },
                 ),
               ),

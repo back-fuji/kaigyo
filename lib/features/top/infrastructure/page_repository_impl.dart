@@ -10,6 +10,7 @@ import '../domain/page_repository.dart';
 class PageRepositoryImpl implements PageRepository {
   static const String _pagesKey = 'pages';
   static const String _pageTextPrefix = 'page_text_';
+  static const String _pageLastUpdatedAtPrefix = 'page_last_updated_at_';
 
   @override
   Future<List<PageEntity>> getAllPages() async {
@@ -29,6 +30,28 @@ class PageRepositoryImpl implements PageRepository {
       // エラーが発生した場合はデフォルトのページを返す
       return _createDefaultPages();
     }
+  }
+
+  @override
+  Future<List<PageEntity>> getPagesUpToLimit(int maxPageCount) async {
+    final allPages = await getAllPages();
+    final existingPageCount = allPages.length;
+
+    // 不足しているページを自動的に作成
+    if (existingPageCount < maxPageCount) {
+      final newPages = <PageEntity>[];
+      for (int i = existingPageCount; i < maxPageCount; i++) {
+        newPages.add(
+          PageEntity(id: 'page${i + 1}', name: 'Page${i + 1}', order: i),
+        );
+      }
+      final updatedPages = [...allPages, ...newPages];
+      await savePages(updatedPages);
+      return updatedPages;
+    }
+
+    // 最大ページ数までに制限
+    return allPages.take(maxPageCount).toList();
   }
 
   @override
@@ -70,6 +93,37 @@ class PageRepositoryImpl implements PageRepository {
     } catch (e) {
       // エラーが発生した場合は無視（ログに記録するなど）
       debugPrint('Error saving page text: $e');
+    }
+  }
+
+  @override
+  Future<DateTime?> getPageLastUpdatedAt(String pageId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = '$_pageLastUpdatedAtPrefix$pageId';
+      final timestamp = prefs.getInt(key);
+      if (timestamp == null) {
+        return null;
+      }
+      return DateTime.fromMillisecondsSinceEpoch(timestamp);
+    } catch (e) {
+      debugPrint('Error getting page last updated at: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<void> savePageLastUpdatedAt(
+    String pageId,
+    DateTime lastUpdatedAt,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = '$_pageLastUpdatedAtPrefix$pageId';
+      final timestamp = lastUpdatedAt.millisecondsSinceEpoch;
+      await prefs.setInt(key, timestamp);
+    } catch (e) {
+      debugPrint('Error saving page last updated at: $e');
     }
   }
 

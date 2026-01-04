@@ -1,17 +1,25 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_constants.dart';
 import 'widgets/settings_header.dart';
 import 'widgets/settings_card.dart';
 import 'widgets/recommended_apps_section.dart';
+import 'widgets/upgrade_modal.dart';
+import '../domain/purchase_repository.dart';
 
 /// 設定画面
 ///
 /// アプリの設定や各種機能へのアクセスを提供する画面です。
 /// ダークモード/ライトモードに応じてデザインが自動的に変更されます。
 class SettingsPage extends StatefulWidget {
+  /// 購入リポジトリ
+  final PurchaseRepository purchaseRepository;
+
   /// コンストラクタ
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, required this.purchaseRepository});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -20,6 +28,9 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   /// おすすめアプリのカードAを非表示にするかどうか
   bool _hideRecommendedCardA = false;
+
+  /// 購入リポジトリ
+  PurchaseRepository get _purchaseRepository => widget.purchaseRepository;
 
   @override
   void initState() {
@@ -73,7 +84,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       iconColor: Colors.red[300]!,
                       title: '改行くんをアップグレード',
                       onTap: () {
-                        // TODO: アップグレード処理
+                        _showUpgradeModal();
                       },
                       isDark: isDark,
                     ),
@@ -99,7 +110,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       iconColor: Colors.amber,
                       title: 'レビューを書いて応援する',
                       onTap: () {
-                        // TODO: レビュー処理
+                        _openStoreReview();
                       },
                       isDark: isDark,
                     ),
@@ -140,6 +151,34 @@ class _SettingsPageState extends State<SettingsPage> {
                       isDark: isDark,
                     ),
                     const SizedBox(height: 24),
+                    // デバッグ（開発用・一番下に配置・目立たないように）
+                    if (kDebugMode) ...[
+                      const SizedBox(height: 32),
+                      Divider(
+                        color: isDark ? Colors.grey[700] : Colors.grey[300],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildSectionTitle('デバッグ', isDark),
+                      const SizedBox(height: 8),
+                      SettingsCard(
+                        icon: Icons.refresh,
+                        iconColor: Colors.grey[400]!,
+                        title: '購入データをリセット',
+                        onTap: () async {
+                          await _resetPurchaseData();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('購入データをリセットしました'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ],
                 ),
               ),
@@ -160,5 +199,75 @@ class _SettingsPageState extends State<SettingsPage> {
         color: isDark ? Colors.grey[300] : Colors.grey[700],
       ),
     );
+  }
+
+  /// アップグレードモーダルを表示
+  void _showUpgradeModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          UpgradeModal(purchaseRepository: _purchaseRepository),
+    );
+  }
+
+  /// 購入データをリセット
+  Future<void> _resetPurchaseData() async {
+    await _purchaseRepository.setAdRemovedPurchased(false);
+    await _purchaseRepository.setPageLimit10Purchased(false);
+    await _purchaseRepository.setPageLimit20Purchased(false);
+  }
+
+  /// ストアのレビュー画面を開く
+  Future<void> _openStoreReview() async {
+    try {
+      final Uri storeUri;
+      if (Platform.isIOS) {
+        // iOS: App Storeのレビューを書く画面に直接遷移
+        // App Store IDが設定されていない場合はエラーメッセージを表示
+        if (AppConstants.iosAppStoreId == 'YOUR_APP_STORE_ID') {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('App Store IDが設定されていません'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+        storeUri = Uri.parse(
+          'https://apps.apple.com/app/id${AppConstants.iosAppStoreId}?action=write-review',
+        );
+      } else {
+        // Android: Google Play Storeのアプリ詳細ページに遷移
+        storeUri = Uri.parse(
+          'https://play.google.com/store/apps/details?id=${AppConstants.androidPackageName}',
+        );
+      }
+
+      if (await canLaunchUrl(storeUri)) {
+        await launchUrl(storeUri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('ストアを開けませんでした'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('エラーが発生しました'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 }
